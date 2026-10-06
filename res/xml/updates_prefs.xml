@@ -16,28 +16,24 @@
             android:key="local_update"
             android:icon="@drawable/ic_update_icon"
             android:title="@string/local_update_title"
-            android:summary="@string/local_update_summary"
-            android:visible="false" />
+            android:summary="@string/local_update_summary" />
 
         <Preference
             android:key="maintainer"
             android:icon="@drawable/ic_maintainers_icon"
-            android:title="@string/maintainer_info_title"
-            android:visible="false" />
+            android:title="@string/maintainer_info_title" />
 
         <Preference
             android:key="donate"
             android:icon="@drawable/ic_donate_icon"
             android:title="@string/donate_info_title"
-            android:summary="@string/donate_info_summary"
-            android:visible="false" />
+            android:summary="@string/donate_info_summary" />
 
         <Preference
             android:key="group"
             android:icon="@drawable/ic_group_icon"
             android:title="@string/group_info_title"
-            android:summary="@string/group_info_summary"
-            android:visible="false" />
+            android:summary="@string/group_info_summary" />
     </PreferenceCategory>
 
 </PreferenceScreen>

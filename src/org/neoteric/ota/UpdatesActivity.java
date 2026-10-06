@@ -331,14 +331,12 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
         }
 
         findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
-        mUpdatesFragment.updateCardPrefs();
         mUpdatesFragment.showUpdaterPref();
         mUpdatesFragment.showChangelog(showChangelog);
     }
 
     private void loadUpdatesList(File jsonFile, boolean manualRefresh)
             throws IOException, JSONException {
-        mUpdatesFragment.updateCardPrefs();
         Log.d(TAG, "Adding remote updates");
         UpdaterController controller = mUpdaterService.getUpdaterController();
 

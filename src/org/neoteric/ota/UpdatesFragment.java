@@ -111,20 +111,10 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
         mUpdaterController = UpdaterController.getInstance(getContext());
         mBroadcastManager = LocalBroadcastManager.getInstance(getContext());
-        deviceList = getContext().getResources().getStringArray(
-                R.array.config_device_list);
-        maintainerNameList = getContext().getResources().getStringArray(
-                R.array.config_maintainer_name_list);
-        maintainerLinkList = getContext().getResources().getStringArray(
-                R.array.config_maintainer_link_list);
-        donateList = getContext().getResources().getStringArray(
-                R.array.config_donate_list);
-        groupList = getContext().getResources().getStringArray(
-                R.array.config_group_list);
-        device_index = getDeviceIndex();
+        initDeviceConfig();
+        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -137,6 +127,8 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
         maintainerCard = findPreference(KEY_MAINTAINER);
         donateCard = findPreference(KEY_DONATE);
         groupCard = findPreference(KEY_GROUP);
+
+        updateCardPrefs();
     }
 
     @Override
@@ -397,9 +389,24 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
         }
     }
 
+    private void initDeviceConfig() {
+        if (getContext() == null) return;
+        deviceList = getContext().getResources().getStringArray(
+                R.array.config_device_list);
+        maintainerNameList = getContext().getResources().getStringArray(
+                R.array.config_maintainer_name_list);
+        maintainerLinkList = getContext().getResources().getStringArray(
+                R.array.config_maintainer_link_list);
+        donateList = getContext().getResources().getStringArray(
+                R.array.config_donate_list);
+        groupList = getContext().getResources().getStringArray(
+                R.array.config_group_list);
+        device_index = getDeviceIndex();
+    }
+
     private int getDeviceIndex() {
         final String device = Utils.getDevice();
-        if (device == null || device.isEmpty()) return -1;
+        if (device == null || device.isEmpty() || deviceList == null) return -1;
         for (int i = 0; i < deviceList.length; ++i) {
             if (device.equals(deviceList[i])) return i;
         }
@@ -419,32 +426,41 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
             }
             return true;
         });
-        localUpdateCard.setVisible(true);
 
         if (device_index != -1) {
-            maintainerCard.setOnPreferenceClickListener(pref -> {
-                openUrl(maintainerLinkList[device_index]);
-                return true;
-            });
-            maintainerCard.setSummary(maintainerNameList[device_index]);
+            maintainerCard.setEnabled(true);
+            if (maintainerLinkList != null && device_index < maintainerLinkList.length) {
+                maintainerCard.setOnPreferenceClickListener(pref -> {
+                    openUrl(maintainerLinkList[device_index]);
+                    return true;
+                });
+            }
+            if (maintainerNameList != null && device_index < maintainerNameList.length) {
+                maintainerCard.setSummary(maintainerNameList[device_index]);
+            }
 
-            donateCard.setOnPreferenceClickListener(pref -> {
-                openUrl(donateList[device_index]);
-                return true;
-            });
-            donateCard.setVisible(true);
+            donateCard.setEnabled(true);
+            if (donateList != null && device_index < donateList.length) {
+                donateCard.setOnPreferenceClickListener(pref -> {
+                    openUrl(donateList[device_index]);
+                    return true;
+                });
+            }
 
-            groupCard.setOnPreferenceClickListener(pref -> {
-                openUrl(groupList[device_index]);
-                return true;
-            });
-            groupCard.setVisible(true);
+            groupCard.setEnabled(true);
+            if (groupList != null && device_index < groupList.length) {
+                groupCard.setOnPreferenceClickListener(pref -> {
+                    openUrl(groupList[device_index]);
+                    return true;
+                });
+            }
         } else {
             maintainerCard.setSummary(getContext().getResources().getString(
                     R.string.maintainer_info_unknown));
             maintainerCard.setEnabled(false);
+            donateCard.setEnabled(false);
+            groupCard.setEnabled(false);
         }
-        maintainerCard.setVisible(true);
     }
 
     private void showSnackbar(int stringId, int duration) {
