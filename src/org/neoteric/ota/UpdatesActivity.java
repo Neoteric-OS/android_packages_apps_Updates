@@ -317,9 +317,19 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
     }
 
     private void showUpdates(boolean showChangelog) {
-        if (ABUpdateInstaller.needsReboot()){
+        if (ABUpdateInstaller.needsReboot()) {
             return;
         }
+
+        Update currentUpdate = mUpdaterService != null
+                ? mUpdaterService.getUpdaterController().getCurrentUpdate()
+                : null;
+
+        if (currentUpdate == null) {
+            hideUpdates();
+            return;
+        }
+
         findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
         mUpdatesFragment.updateCardPrefs();
         mUpdatesFragment.showUpdaterPref();
