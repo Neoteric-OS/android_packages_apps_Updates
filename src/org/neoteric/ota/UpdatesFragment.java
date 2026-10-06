@@ -19,12 +19,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
-import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceScreen;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
+
+import com.android.settingslib.widget.SettingsBasePreferenceFragment;
 
 import org.neoteric.ota.controller.UpdaterController;
 import org.neoteric.ota.misc.Utils;
@@ -32,10 +34,8 @@ import org.neoteric.ota.model.Update;
 import org.neoteric.ota.model.UpdateInfo;
 import org.neoteric.ota.model.UpdateStatus;
 
-import org.neoteric.ota.prefs.CardPreference;
 import org.neoteric.ota.prefs.ChangelogPreference;
 import org.neoteric.ota.prefs.UpdaterCardPreference;
-import org.neoteric.ota.prefs.RoundCornerPreferenceAdapter;
 
 import org.neoteric.ota.R;
 
@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class UpdatesFragment extends PreferenceFragmentCompat {
+public class UpdatesFragment extends SettingsBasePreferenceFragment {
 
     private static final int SELECT_FILE = 1001;
     private static final String TAG = "UpdatesFragment";
@@ -75,10 +75,10 @@ public class UpdatesFragment extends PreferenceFragmentCompat {
     private ChangelogPreference mChangelogPref;
     private PreferenceCategory mUpdaterPrefCategory;
 
-    private CardPreference localUpdateCard;
-    private CardPreference maintainerCard;
-    private CardPreference donateCard;
-    private CardPreference groupCard;
+    private Preference localUpdateCard;
+    private Preference maintainerCard;
+    private Preference donateCard;
+    private Preference groupCard;
 
     private LocalBroadcastManager mBroadcastManager;
 
@@ -137,11 +137,6 @@ public class UpdatesFragment extends PreferenceFragmentCompat {
         maintainerCard = findPreference(KEY_MAINTAINER);
         donateCard = findPreference(KEY_DONATE);
         groupCard = findPreference(KEY_GROUP);
-    }
-
-    @Override
-    protected RecyclerView.Adapter onCreateAdapter(PreferenceScreen preferenceScreen) {
-        return new RoundCornerPreferenceAdapter(preferenceScreen);
     }
 
     @Override
