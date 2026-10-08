@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory 
         android:key="updater_cards"
-        android:layout="@layout/preference_category_no_label">
+        android:layout="@layout/preference_category_no_label"
+        app:isPreferenceVisible="false">
         <org.neoteric.ota.prefs.UpdaterCardPreference
             android:key="updater_card"
-            android:visible="false"/>
+            app:isPreferenceVisible="false"/>
     </PreferenceCategory>
 
     <PreferenceCategory

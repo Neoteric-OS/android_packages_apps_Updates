@@ -128,6 +128,7 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
         donateCard = findPreference(KEY_DONATE);
         groupCard = findPreference(KEY_GROUP);
 
+        hideUpdaterPref();
         updateCardPrefs();
     }
 
@@ -156,7 +157,14 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
                         importedFile = importFile(uri, fileName);
                         verifyPackage(importedFile);
 
-                        final Runnable deleteUpdate = () -> Utils.cleanupDownloadsDir(getContext());
+                        final Runnable deleteUpdate = () -> {
+                            if (mUpdaterController != null) {
+                                mUpdaterController.removeUpdate(false);
+                            } else {
+                                Utils.cleanupDownloadsDir(getContext());
+                            }
+                            hideUpdaterPref();
+                        };
 
                         final Update update = buildLocalUpdate(importedFile, fileName);
                         addUpdate(update);
@@ -266,11 +274,30 @@ public class UpdatesFragment extends SettingsBasePreferenceFragment {
         if (mUpdaterPref != null) {
             mUpdaterPref.setVisible(false);
         }
+        if (mUpdaterPrefCategory != null) {
+            mUpdaterPrefCategory.setVisible(false);
+        }
     }
 
     public void showUpdaterPref() {
-        if (mUpdaterPref != null) {
-            mUpdaterPref.setVisible(true);
+        Activity activity = getActivity();
+        View noNewUpdatesView = activity != null ? activity.findViewById(R.id.no_new_updates_view) : null;
+        if (noNewUpdatesView != null && noNewUpdatesView.getVisibility() == View.VISIBLE) {
+            hideUpdaterPref();
+            return;
+        }
+
+        Update update = mUpdaterController != null ? mUpdaterController.getCurrentUpdate() : null;
+        if (update != null && update.getStatus() != UpdateStatus.INSTALLATION_FAILED
+                && update.getStatus() != UpdateStatus.DELETED) {
+            if (mUpdaterPrefCategory != null) {
+                mUpdaterPrefCategory.setVisible(true);
+            }
+            if (mUpdaterPref != null) {
+                mUpdaterPref.setVisible(true);
+            }
+        } else {
+            hideUpdaterPref();
         }
     }
 

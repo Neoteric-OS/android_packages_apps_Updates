@@ -274,7 +274,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
 
     @Override
     public void addedUpdate() {
-        getUpdatesList();
+        showUpdates(false);
         Utils.triggerUpdate(this);
     }
 
@@ -325,14 +325,17 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
                 ? mUpdaterService.getUpdaterController().getCurrentUpdate()
                 : null;
 
-        if (currentUpdate == null) {
+        if (currentUpdate == null || currentUpdate.getStatus() == UpdateStatus.INSTALLATION_FAILED
+                || currentUpdate.getStatus() == UpdateStatus.DELETED
+                || (!Update.LOCAL_ID.equals(currentUpdate.getDownloadId()) && !Utils.isCompatible(currentUpdate))) {
             hideUpdates();
             return;
         }
 
         findViewById(R.id.no_new_updates_view).setVisibility(View.GONE);
+        mUpdatesFragment.setDownloadId(currentUpdate.getDownloadId());
         mUpdatesFragment.showUpdaterPref();
-        mUpdatesFragment.showChangelog(showChangelog);
+        mUpdatesFragment.showChangelog(showChangelog && !Update.LOCAL_ID.equals(currentUpdate.getDownloadId()));
     }
 
     private void loadUpdatesList(File jsonFile, boolean manualRefresh)
@@ -342,15 +345,23 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
 
         final Update currUpdate = controller.getCurrentUpdate();
         if (currUpdate != null && currUpdate.getDownloadId().equals(Update.LOCAL_ID)) {
-            showUpdates(false);
-            mUpdatesFragment.setDownloadId(Update.LOCAL_ID);
-            return;
+            if (currUpdate.getStatus() != UpdateStatus.INSTALLATION_FAILED) {
+                showUpdates(false);
+                return;
+            } else {
+                controller.removeUpdate(false);
+            }
         }
 
         UpdateInfo newUpdate = Utils.parseJson(jsonFile, true, this);
         boolean updateAvailable = newUpdate != null;
         if (updateAvailable) {
             controller.addUpdate(newUpdate);
+        } else {
+            final Update currentUpdate = controller.getCurrentUpdate();
+            if (currentUpdate != null && !currentUpdate.getDownloadId().equals(Update.LOCAL_ID)) {
+                controller.removeUpdate(false);
+            }
         }
 
         if (manualRefresh) {
@@ -361,13 +372,25 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
 
         if (updateAvailable) {
             showUpdates(true);
-            mUpdatesFragment.setDownloadId(newUpdate.getDownloadId());
         } else {
             hideUpdates();
         }
     }
 
     private void getUpdatesList() {
+        Update currentUpdate = mUpdaterService != null
+                ? mUpdaterService.getUpdaterController().getCurrentUpdate()
+                : null;
+        if (currentUpdate != null && Update.LOCAL_ID.equals(currentUpdate.getDownloadId())) {
+            if (currentUpdate.getStatus() != UpdateStatus.INSTALLATION_FAILED) {
+                showUpdates(false);
+                refreshAnimationStop();
+                return;
+            } else if (mUpdaterService != null) {
+                mUpdaterService.getUpdaterController().removeUpdate(false);
+            }
+        }
+
         File jsonFile = Utils.getCachedUpdateList(this);
         if (jsonFile.exists()) {
             try {
@@ -375,9 +398,10 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
                 Log.d(TAG, "Cached list parsed");
             } catch (IOException | JSONException e) {
                 Log.e(TAG, "Error while parsing json list", e);
+                hideUpdates();
             }
             refreshAnimationStop();
-        }else{
+        } else {
             downloadUpdatesList(false);
         }
     }
@@ -394,6 +418,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Could not read json", e);
             showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            hideUpdates();
         }
     }
 
@@ -411,9 +436,16 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
                     if (!cancelled) {
                         showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
                     }
-                    new Handler().postDelayed(() -> {
-                        showUpdates(true);
-                    }, 1000);
+                    Update currentUpdate = mUpdaterService != null
+                            ? mUpdaterService.getUpdaterController().getCurrentUpdate()
+                            : null;
+                    if (currentUpdate != null && currentUpdate.getStatus() != UpdateStatus.INSTALLATION_FAILED
+                            && currentUpdate.getStatus() != UpdateStatus.DELETED
+                            && (Update.LOCAL_ID.equals(currentUpdate.getDownloadId()) || Utils.isCompatible(currentUpdate))) {
+                        showUpdates(!Update.LOCAL_ID.equals(currentUpdate.getDownloadId()));
+                    } else {
+                        hideUpdates();
+                    }
                     refreshAnimationStop();
                 });
             }
@@ -442,6 +474,8 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
         } catch (IOException exception) {
             Log.e(TAG, "Could not build download client");
             showSnackbar(R.string.snack_updates_check_failed, Snackbar.LENGTH_LONG);
+            hideUpdates();
+            refreshAnimationStop();
             return;
         }
         refreshAnimationStart();
@@ -454,8 +488,6 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
         }
         updateRefreshButtonState(false);
         mSwipeRefresh.setRefreshing(true);
-        mUpdatesFragment.hideUpdaterPref();
-        mUpdatesFragment.showChangelog(false);
     }
 
     private void refreshAnimationStop() {
@@ -472,13 +504,16 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
     }
 
     private void handleStatusChange(UpdateStatus status) {
-        if (mUpdaterService.getUpdaterController().getCurrentUpdate().getDownloadId().equals(Update.LOCAL_ID)
+        Update currentUpdate = mUpdaterService != null
+                ? mUpdaterService.getUpdaterController().getCurrentUpdate()
+                : null;
+        if (currentUpdate != null && Update.LOCAL_ID.equals(currentUpdate.getDownloadId())
                 && status == UpdateStatus.INSTALLATION_FAILED) {
-            if (mUpdateStatus != status) {
-                mUpdateStatus = status;
-            }
+            mUpdateStatus = status;
             showSnackbar(R.string.installing_update_error, Snackbar.LENGTH_LONG);
+            mUpdaterService.getUpdaterController().removeUpdate(false);
             hideUpdates();
+            handleRefreshButtonState();
             return;
         }
         if (mUpdateStatus == status){
@@ -514,6 +549,7 @@ public class UpdatesActivity extends UpdatesListActivity implements UpdateListen
             case DOWNLOAD_ERROR:
             case DELETED:
             case VERIFICATION_FAILED:
+            case INSTALLATION_FAILED:
                 Log.d(TAG, "handleRefreshButtonState, status is: " + mUpdateStatus + ", enabling button");
                 updateRefreshButtonState(true);
                 break;
